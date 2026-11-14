@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cinema Verdade - Plataforma de Streaming</title>
+    <style>
+        :root {
+            --primary: #e50914;
+            --bg: #0f0f0f;
+            --card-bg: #1a1a1a;
+            --text: #ffffff;
+            --gray: #b3b3b3;
+            --border: #333333;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background-color: var(--bg); color: var(--text); padding-bottom: 50px; }
+        
+        header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 15px 20px; background: rgba(15,15,15,0.95);
+            position: sticky; top: 0; z-index: 100; border-bottom: 1px solid var(--border);
+        }
+        .logo { font-size: 20px; font-weight: bold; color: var(--primary); display: flex; align-items: center; gap: 8px; }
+        .nav-btns { display: flex; gap: 10px; }
+        .nav-btn {
+            background: var(--card-bg); border: 1px solid var(--border); color: var(--text);
+            padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 14px; display: flex; align-items: center; gap: 5px;
+        }
+        .nav-btn.active { background: var(--primary); border-color: var(--primary); }
+
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        
+        /* Secções */
+        .section { display: none; }
+        .section.active { display: block; }
+
+        /* Catálogo */
+        .search-bar { width: 100%; padding: 12px 15px; border-radius: 8px; border: 1px solid var(--border); background: var(--card-bg); color: var(--text); font-size: 16px; margin-bottom: 20px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px; }
+        @media (min-width: 768px) { .grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; } }
+        
+        .card { background: var(--card-bg); border-radius: 10px; overflow: hidden; border: 1px solid var(--border); cursor: pointer; transition: transform 0.2s; }
+        .card:hover { transform: scale(1.03); }
+        .card-img { width: 100%; height: 250px; object-fit: cover; background: #222; }
+        .card-info { padding: 12px; }
+        .card-title { font-size: 15px; font-weight: bold; margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .card-cat { font-size: 12px; color: var(--gray); text-transform: uppercase; }
+
+        /* Admin Form */
+        .admin-form { background: var(--card-bg); padding: 20px; border-radius: 10px; border: 1px solid var(--border); max-width: 600px; margin: 0 auto; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-size: 14px; margin-bottom: 5px; color: var(--gray); }
+        .form-group input, .form-group select { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 14px; }
+        .btn-submit { width: 100%; background: var(--primary); color: white; border: none; padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 16px; margin-top: 10px; }
+        
+        /* Lista Admin */
+        .admin-list { margin-top: 30px; }
+        .admin-item { display: flex; justify-content: space-between; align-items: center; background: var(--card-bg); padding: 10px 15px; border-radius: 6px; margin-bottom: 10px; border: 1px solid var(--border); }
+        .btn-del { background: #ff4444; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; }
+
+        /* Modal / Leitor */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; justify-content: center; align-items: center; padding: 20px; }
+        .modal-content { background: var(--card-bg); width: 100%; max-width: 800px; border-radius: 10px; overflow: hidden; border: 1px solid var(--border); position: relative; }
+        .modal-header { padding: 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); }
+        .close-btn { background: none; border: none; color: white; font-size: 22px; cursor: pointer; }
+        .video-container { position: relative; width: 100%; padding-bottom: 56.25%; background: #000; }
+        .video-container iframe, .video-container video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; }
+        .modal-body { padding: 20px; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo">🎬 Cinema Verdade</div>
+        <div class="nav-btns">
+            <button class="nav-btn active" onclick="switchTab('catalog')" id="btn-catalog">🍿 Catálogo</button>
+            <button class="nav-btn" onclick="switchTab('admin')" id="btn-admin">⚙️ Admin</button>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- CATÁLOGO -->
+        <div id="catalog-section" class="section active">
+            <input type="text" class="search-bar" id="search" placeholder="Pesquisar filmes ou séries..." oninput="renderCatalog()">
+            <div id="catalog-grid" class="grid"></div>
+        </div>
+
+        <!-- ADMIN -->
+        <div id="admin-section" class="section">
+            <div class="admin-form">
+                <h3 style="margin-bottom: 15px;">➕ Adicionar Novo Título</h3>
+                <div class="form-group">
+                    <label>Título</label>
+                    <input type="text" id="m-title" placeholder="Ex: O Segredo do Vale">
+                </div>
+                <div class="form-group">
+                    <label>Categoria</label>
+                    <select id="m-cat">
+                        <option value="Filme">Filme</option>
+                        <option value="Série">Série</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>URL da Capa (Imagem)</label>
+                    <input type="text" id="m-img" placeholder="Cole o link direto da imagem aqui">
+                </div>
+                <div class="form-group">
+                    <label>Link do Vídeo (YouTube, MP4, etc.)</label>
+                    <input type="text" id="m-video" placeholder="Cole o link do vídeo">
+                </div>
+                <button class="btn-submit" onclick="addMedia()">Guardar Título</button>
+            </div>
+
+            <div class="admin-list">
+                <h3>Gerir Conteúdos Existentes</h3>
+                <div id="admin-items-list" style="margin-top: 15px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL PLAYER -->
+    <div id="player-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="player-title">Título</h3>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="video-container" id="player-box"></div>
+            <div class="modal-body">
+                <p id="player-cat" style="color: var(--gray);"></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let mediaList = JSON.parse(localStorage.getItem('cinema_verdade_data')) || [
+            { id: 1, title: "A Grande Jornada", cat: "Filme", img: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=500", video: "https://www.youtube.com/embed/dQw4w9WgXcQ" },
+            { id: 2, title: "Mistérios do Cosmos", cat: "Série", img: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=500", video: "https://www.youtube.com/embed/dQw4w9WgXcQ" }
+        ];
+
+        function switchTab(tab) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            if(tab === 'catalog') {
+                document.getElementById('catalog-section').classList.add('active');
+                document.getElementById('btn-catalog').classList.add('active');
+                renderCatalog();
+            } else {
+                document.getElementById('admin-section').classList.add('active');
+                document.getElementById('btn-admin').classList.add('active');
+                renderAdminList();
+            }
+        }
+
+        function renderCatalog() {
+            const query = document.getElementById('search').value.toLowerCase();
+            const grid = document.getElementById('catalog-grid');
+            grid.innerHTML = '';
+            
+            const filtered = mediaList.filter(m => m.title.toLowerCase().includes(query));
+            
+            if(filtered.length === 0) {
+                grid.innerHTML = '<p style="color:var(--gray); grid-column: 1/-1; text-align:center;">Nenhum título encontrado.</p>';
+                return;
+            }
+
+            filtered.forEach(m => {
+                grid.innerHTML += `
+                    <div class="card" onclick="openPlayer(${m.id})">
+                        <img src="${m.img}" class="card-img" alt="${m.title}">
+                        <div class="card-info">
+                            <div class="card-title">${m.title}</div>
+                            <div class="card-cat">${m.cat}</div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function addMedia() {
+            const title = document.getElementById('m-title').value;
+            const cat = document.getElementById('m-cat').value;
+            const img = document.getElementById('m-img').value;
+            const video = document.getElementById('m-video').value;
+
+            if(!title || !img || !video) {
+                alert('Por favor, preencha todos os campos principais.');
+                return;
+            }
+
+            mediaList.push({ id: Date.now(), title, cat, img, video });
+            localStorage.setItem('cinema_verdade_data', JSON.stringify(mediaList));
+            
+            document.getElementById('m-title').value = '';
+            document.getElementById('m-img').value = '';
+            document.getElementById('m-video').value = '';
+            
+            alert('Título adicionado com sucesso!');
+            switchTab('catalog');
+        }
+
+        function renderAdminList() {
+            const list = document.getElementById('admin-items-list');
+            list.innerHTML = '';
+            if(mediaList.length === 0) {
+                list.innerHTML = '<p style="color:var(--gray);">Ainda sem títulos guardados.</p>';
+                return;
+            }
+            mediaList.forEach(m => {
+                list.innerHTML += `
+                    <div class="admin-item">
+                        <span><strong>${m.title}</strong> (${m.cat})</span>
+                        <button class="btn-del" onclick="deleteMedia(${m.id})">Apagar</button>
+                    </div>
+                `;
+            });
+        }
+
+        function deleteMedia(id) {
+            mediaList = mediaList.filter(m => m.id !== id);
+            localStorage.setItem('cinema_verdade_data', JSON.stringify(mediaList));
+            renderAdminList();
+        }
+
+        function openPlayer(id) {
+            const m = mediaList.find(item => item.id === id);
+            if(!m) return;
+            document.getElementById('player-title').innerText = m.title;
+            document.getElementById('player-cat').innerText = "Categoria: " + m.cat;
+            
+            let embedUrl = m.video;
+            if(embedUrl.includes('watch?v=')) {
+                embedUrl = embedUrl.replace('watch?v=', 'embed/');
+            }
+            
+            document.getElementById('player-box').innerHTML = `<iframe src="${embedUrl}" allowfullscreen></iframe>`;
+            document.getElementById('player-modal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('player-modal').style.display = 'none';
+            document.getElementById('player-box').innerHTML = '';
+        }
+
+        renderCatalog();
+    </script>
+</body>
+</html>
