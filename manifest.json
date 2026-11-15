@@ -1,0 +1,13 @@
+{
+  "background_color": "#ffffff",
+  "dir": "ltr",
+  "display": "standalone",
+  "name": "Cinema-Verdade",
+  "orientation": "any",
+  "scope": "/",
+  "short_name": "Cinema",
+  "start_url": "/",
+  "theme_color": "#ffffff",
+  "id": "Verdade",
+  "description": "Plataforma oficial de streaming séries e filmes do Cinema-Verdade"
+}
